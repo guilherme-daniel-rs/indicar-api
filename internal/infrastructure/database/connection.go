@@ -5,22 +5,22 @@ import (
 	"fmt"
 	"indicar-api/configs"
 
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 var DB *sql.DB
 
 func NewConnection() (*gorm.DB, error) {
-	dns := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=UTC",
-		configs.Get().Database.Host,
-		configs.Get().Database.Port,
+	dns := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		configs.Get().Database.User,
 		configs.Get().Database.Password,
+		configs.Get().Database.Host,
+		configs.Get().Database.Port,
 		configs.Get().Database.Name,
 	)
 
-	db, err := gorm.Open(postgres.Open(dns), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dns), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
