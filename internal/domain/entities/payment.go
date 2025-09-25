@@ -1,33 +1,18 @@
 package entities
 
-import (
-	"time"
-
-	"gorm.io/gorm"
-)
+import "time"
 
 type Payment struct {
-	ID            uint        `gorm:"primaryKey;column:id"`
-	UserID        uint        `gorm:"column:user_id"`
-	User          User        `gorm:"foreignKey:UserID;references:ID"`
-	Value         float64     `gorm:"column:value"`
-	CreatedAt     time.Time   `gorm:"column:created_at"`
-	UpdatedAt     time.Time   `gorm:"column:updated_at"`
-	Status        int         `gorm:"column:status"`
-	BankAccountID uint        `gorm:"column:bank_account_id;foreignKey:BankAccountID;references:ID"`
-	BankAccount   BankAccount `gorm:"foreignKey:BankAccountID;references:ID"`
-}
+	ID               int       `json:"id" gorm:"primaryKey;autoIncrement"`
+	EvaluationID     int       `json:"evaluation_id" gorm:"not null;unique"`
+	Provider         string    `json:"provider" gorm:"type:varchar(24);not null"`
+	ProviderChargeID string    `json:"provider_charge_id" gorm:"type:varchar(64);not null;uniqueIndex:idx_provider_charge"`
+	AmountCents      int       `json:"amount_cents" gorm:"not null"`
+	Currency         string    `json:"currency" gorm:"type:char(3);not null;default:BRL"`
+	Status           string    `json:"status" gorm:"type:varchar(24);not null;index:idx_status_created"`
+	CreatedAt        time.Time `json:"created_at" gorm:"not null;default:CURRENT_TIMESTAMP;index:idx_status_created"`
+	UpdatedAt        time.Time `json:"updated_at" gorm:"not null;default:CURRENT_TIMESTAMP;autoUpdateTime"`
 
-func (Payment) TableName() string {
-	return "payment"
-}
-
-func (payment *Payment) BeforeCreate(tx *gorm.DB) error {
-	payment.CreatedAt = time.Now()
-	return nil
-}
-
-func (payment *Payment) BeforeUpdate(tx *gorm.DB) (err error) {
-	payment.UpdatedAt = time.Now()
-	return nil
+	// Relationships
+	Evaluation Evaluation `json:"-" gorm:"foreignKey:EvaluationID"`
 }

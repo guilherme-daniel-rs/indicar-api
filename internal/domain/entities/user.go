@@ -1,32 +1,23 @@
 package entities
 
-import (
-	"time"
+import "time"
 
-	"gorm.io/gorm"
+type UserRole string
+
+const (
+	UserRoleUser      UserRole = "user"
+	UserRoleEvaluator UserRole = "evaluator"
+	UserRoleAdmin     UserRole = "admin"
 )
 
 type User struct {
-	ID         uint      `gorm:"primaryKey;column:id"`
-	Name       string    `gorm:"column:name"`
-	Email      string    `gorm:"unique;column:email"`
-	Password   string    `gorm:"column:password"`
-	City       string    `gorm:"column:city"`
-	PictureURL string    `gorm:"column:picture_url"`
-	CreatedAt  time.Time `gorm:"column:created_at"`
-	UpdatedAt  time.Time `gorm:"column:updated_at"`
-}
-
-func (User) TableName() string {
-	return "user"
-}
-
-func (user *User) BeforeCreate(tx *gorm.DB) error {
-	user.CreatedAt = time.Now()
-	return nil
-}
-
-func (user *User) BeforeUpdate(tx *gorm.DB) (err error) {
-	user.UpdatedAt = time.Now()
-	return nil
+	ID           int       `json:"id" gorm:"primaryKey;autoIncrement"`
+	FullName     string    `json:"full_name" gorm:"type:varchar(120);not null"`
+	Email        string    `json:"email" gorm:"type:varchar(160);unique;not null"`
+	PasswordHash string    `json:"-" gorm:"type:varchar(255);not null;column:password_hash"`
+	Phone        *string   `json:"phone,omitempty" gorm:"type:varchar(32)"`
+	Role         UserRole  `json:"role" gorm:"type:varchar(20);not null;index:idx_role_active"`
+	CreatedAt    time.Time `json:"created_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt    time.Time `json:"updated_at" gorm:"not null;default:CURRENT_TIMESTAMP;autoUpdateTime"`
+	IsActive     bool      `json:"is_active" gorm:"not null;default:true;index:idx_role_active"`
 }
