@@ -1,14 +1,19 @@
 package main
 
 import (
-	"database/sql"
+	"flag"
 	"fmt"
 	"indicar-api/configs"
 	"indicar-api/internal/infrastructure/database"
 	"indicar-api/internal/infrastructure/database/migrations"
 	"log"
 	"net/http"
+	"os"
+
+	"gorm.io/gorm"
 )
+
+var DB *gorm.DB
 
 func init() {
 	configs.Load()
@@ -18,24 +23,36 @@ func init() {
 		log.Fatal("error to connect DB!", err.Error())
 	}
 
-	migrations.RunMigrations(db)
+	DB = db
 }
 
-var DB *sql.DB
-
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	err := DB.Ping()
+	sqlDB, err := DB.DB()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = sqlDB.Ping()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-
 	fmt.Fprintln(w, "API is up and running!!!")
 }
 
 func main() {
+	migrateFlag := flag.Bool("migrate", false, "Run database migrations")
+	flag.Parse()
+
+	if *migrateFlag {
+		fmt.Println("Running migrations...")
+		migrations.RunMigrations(DB)
+		fmt.Println("Migrations completed successfully!")
+		os.Exit(0)
+	}
 
 	fmt.Println("Server connected with DB!!!")
 

@@ -15,8 +15,8 @@ type Report struct {
 	EvaluatorID  int          `json:"evaluator_id" gorm:"not null;index:idx_evaluator_status"`
 	Summary      *string      `json:"summary,omitempty" gorm:"type:varchar(255)"`
 	Status       ReportStatus `json:"status" gorm:"type:ENUM('draft','finalized');not null;index:idx_evaluator_status"`
-	CreatedAt    time.Time    `json:"created_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt    time.Time    `json:"updated_at" gorm:"not null;default:CURRENT_TIMESTAMP;autoUpdateTime"`
+	CreatedAt    time.Time    `json:"created_at" gorm:"type:datetime(3);not null;default:current_timestamp(3)"`
+	UpdatedAt    time.Time    `json:"updated_at" gorm:"type:datetime(3);not null;default:current_timestamp(3) on update current_timestamp(3)"`
 
 	// Relationships
 	Evaluation Evaluation `json:"-" gorm:"foreignKey:EvaluationID"`
@@ -30,7 +30,7 @@ type ReportFile struct {
 	S3Key       string    `json:"s3_key" gorm:"type:varchar(256);not null;uniqueIndex:idx_s3_location"`
 	ContentType string    `json:"content_type" gorm:"type:varchar(80);default:'application/pdf'"`
 	SizeBytes   *int      `json:"size_bytes,omitempty"`
-	CreatedAt   time.Time `json:"created_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
+	CreatedAt   time.Time `json:"created_at" gorm:"type:datetime(3);not null;default:current_timestamp(3)"`
 
 	// Relationships
 	Report Report `json:"-" gorm:"foreignKey:ReportID"`

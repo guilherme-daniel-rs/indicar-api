@@ -23,8 +23,8 @@ type Evaluation struct {
 	VehiclePlate *string          `json:"vehicle_plate,omitempty" gorm:"type:varchar(16)"`
 	Status       EvaluationStatus `json:"status" gorm:"type:evaluation_status;not null;index:idx_requester_status,idx_evaluator_status,idx_city_status"`
 	Notes        *string          `json:"notes,omitempty" gorm:"type:text"`
-	CreatedAt    time.Time        `json:"created_at" gorm:"not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt    time.Time        `json:"updated_at" gorm:"not null;default:CURRENT_TIMESTAMP;autoUpdateTime"`
+	CreatedAt    time.Time        `json:"created_at" gorm:"type:datetime(3);not null;default:current_timestamp(3)"`
+	UpdatedAt    time.Time        `json:"updated_at" gorm:"type:datetime(3);not null;default:current_timestamp(3) on update current_timestamp(3)"`
 
 	// Relationships
 	Requester User  `json:"-" gorm:"foreignKey:RequesterID"`
@@ -39,7 +39,7 @@ type EvaluationPhoto struct {
 	S3Key        string    `json:"s3_key" gorm:"type:varchar(256);not null;uniqueIndex:idx_s3_location"`
 	ContentType  *string   `json:"content_type,omitempty" gorm:"type:varchar(80)"`
 	SizeBytes    *int      `json:"size_bytes,omitempty"`
-	CreatedAt    time.Time `json:"created_at" gorm:"not null;default:CURRENT_TIMESTAMP;index:idx_evaluation_created"`
+	CreatedAt    time.Time `json:"created_at" gorm:"type:datetime(3);not null;default:current_timestamp(3);index:idx_evaluation_created"`
 
 	// Relationships
 	Evaluation Evaluation `json:"-" gorm:"foreignKey:EvaluationID"`
