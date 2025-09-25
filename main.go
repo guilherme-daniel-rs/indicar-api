@@ -45,7 +45,15 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	migrateFlag := flag.Bool("migrate", false, "Run database migrations")
+	dropTablesFlag := flag.Bool("drop-tables", false, "Drop all database tables")
 	flag.Parse()
+
+	if *dropTablesFlag {
+		fmt.Println("Dropping all tables...")
+		migrations.DropTables(DB)
+		fmt.Println("All tables dropped successfully!")
+		os.Exit(0)
+	}
 
 	if *migrateFlag {
 		fmt.Println("Running migrations...")

@@ -21,7 +21,7 @@ type Evaluation struct {
 	VehicleModel string           `json:"vehicle_model" gorm:"type:varchar(120);not null;index:idx_vehicle"`
 	VehicleYear  *int             `json:"vehicle_year,omitempty"`
 	VehiclePlate *string          `json:"vehicle_plate,omitempty" gorm:"type:varchar(16)"`
-	Status       EvaluationStatus `json:"status" gorm:"type:evaluation_status;not null;index:idx_requester_status,idx_evaluator_status,idx_city_status"`
+	Status       EvaluationStatus `json:"status" gorm:"type:ENUM('created', 'accepted', 'in_progress', 'completed', 'canceled');not null;index:idx_requester_status,idx_evaluator_status,idx_city_status"`
 	Notes        *string          `json:"notes,omitempty" gorm:"type:text"`
 	CreatedAt    time.Time        `json:"created_at" gorm:"type:datetime(3);not null;default:current_timestamp(3)"`
 	UpdatedAt    time.Time        `json:"updated_at" gorm:"type:datetime(3);not null;default:current_timestamp(3) on update current_timestamp(3)"`
