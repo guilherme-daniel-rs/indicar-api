@@ -6,10 +6,11 @@ import (
 	"indicar-api/configs"
 	"indicar-api/internal/infrastructure/database"
 	"indicar-api/internal/infrastructure/database/migrations"
+	"indicar-api/internal/infrastructure/routes"
 	"log"
-	"net/http"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -24,23 +25,6 @@ func init() {
 	}
 
 	DB = db
-}
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	sqlDB, err := DB.DB()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	err = sqlDB.Ping()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "API is up and running!!!")
 }
 
 func main() {
@@ -62,14 +46,31 @@ func main() {
 		os.Exit(0)
 	}
 
-	fmt.Println("Server connected with DB!!!")
+	router := gin.Default()
 
-	http.HandleFunc("/health", healthHandler)
+	// Setup routes
+	routes.SetupAuthRoutes(router, DB)
 
-	fmt.Println("Server is running on :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		fmt.Println("Error starting server:", err)
+	// Health check endpoint
+	router.GET("/health", func(c *gin.Context) {
+		sqlDB, err := DB.DB()
+		if err != nil {
+			c.JSON(500, gin.H{"error": "database error"})
+			return
+		}
+
+		err = sqlDB.Ping()
+		if err != nil {
+			c.JSON(500, gin.H{"error": "database ping failed"})
+			return
+		}
+
+		c.JSON(200, gin.H{"message": "API is up and running!!!"})
+	})
+
+	port := ":8080"
+	fmt.Printf("Server is running on %s\n", port)
+	if err := router.Run(port); err != nil {
+		fmt.Printf("Error starting server: %v\n", err)
 	}
-
-	fmt.Println("Server is finished!!!")
 }
