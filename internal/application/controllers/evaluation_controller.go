@@ -9,12 +9,14 @@ import (
 )
 
 type EvaluationController struct {
-	evaluationService *services.EvaluationService
+	evaluationService      *services.EvaluationService
+	evaluationPhotoService *services.EvaluationPhotoService
 }
 
-func NewEvaluationController(evaluationService *services.EvaluationService) *EvaluationController {
+func NewEvaluationController(evaluationService *services.EvaluationService, evaluationPhotoService *services.EvaluationPhotoService) *EvaluationController {
 	return &EvaluationController{
-		evaluationService: evaluationService,
+		evaluationService:      evaluationService,
+		evaluationPhotoService: evaluationPhotoService,
 	}
 }
 
@@ -87,4 +89,67 @@ func (c *EvaluationController) Update(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, evaluation)
+}
+
+func (c *EvaluationController) UploadPhoto(ctx *gin.Context) {
+	evaluationID, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid evaluation ID"})
+		return
+	}
+
+	file, err := ctx.FormFile("photo")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "photo file is required"})
+		return
+	}
+
+	if file.Size > 10*1024*1024 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "file size exceeds 10MB limit"})
+		return
+	}
+
+	f, err := file.Open()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error reading file"})
+		return
+	}
+	defer f.Close()
+
+	fileBytes := make([]byte, file.Size)
+	_, err = f.Read(fileBytes)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error reading file"})
+		return
+	}
+
+	input := services.UploadPhotoInput{
+		File:        fileBytes,
+		ContentType: file.Header.Get("Content-Type"),
+		SizeBytes:   int(file.Size),
+	}
+
+	photo, err := c.evaluationPhotoService.UploadPhoto(evaluationID, input)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, photo)
+}
+
+func (c *EvaluationController) ListPhotos(ctx *gin.Context) {
+	evaluationID, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid evaluation ID"})
+		return
+	}
+
+	photos, err := c.evaluationPhotoService.ListPhotos(evaluationID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, photos)
 }

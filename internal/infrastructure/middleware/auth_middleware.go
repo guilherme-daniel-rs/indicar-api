@@ -40,7 +40,6 @@ func AuthMiddleware(jwtSecret []byte) gin.HandlerFunc {
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			// Extract user_id from claims and set it in context
 			if userID, exists := claims["user_id"]; exists {
 				c.Set("user_id", int(userID.(float64)))
 				c.Next()

@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"fmt"
 	"indicar-api/configs"
 	"indicar-api/internal/application/controllers"
 	"indicar-api/internal/application/services"
@@ -10,14 +11,17 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupEvaluationRoutes(router *gin.Engine, db *gorm.DB) {
+func SetupEvaluationRoutes(router *gin.Engine, db *gorm.DB) error {
 	evaluationService := services.NewEvaluationService(db)
-	evaluationController := controllers.NewEvaluationController(evaluationService)
+	evaluationPhotoService, err := services.NewEvaluationPhotoService(db)
+	if err != nil {
+		return fmt.Errorf("failed to initialize photo service: %w", err)
+	}
 
-	// Middleware de autenticação
+	evaluationController := controllers.NewEvaluationController(evaluationService, evaluationPhotoService)
+
 	authMiddleware := middleware.AuthMiddleware([]byte(configs.Get().JWT.Secret))
 
-	// Evaluation endpoints (protected)
 	evaluations := router.Group("/evaluations")
 	evaluations.Use(authMiddleware)
 	{
@@ -25,5 +29,10 @@ func SetupEvaluationRoutes(router *gin.Engine, db *gorm.DB) {
 		evaluations.GET("/:id", evaluationController.GetByID)
 		evaluations.GET("", evaluationController.List)
 		evaluations.PATCH("/:id", evaluationController.Update)
+
+		evaluations.POST("/:id/photos", evaluationController.UploadPhoto)
+		evaluations.GET("/:id/photos", evaluationController.ListPhotos)
 	}
+
+	return nil
 }

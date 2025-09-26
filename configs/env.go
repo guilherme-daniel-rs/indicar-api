@@ -13,6 +13,7 @@ var configuration *Config
 type Config struct {
 	Database database
 	JWT      jwt
+	AWS      aws
 }
 
 type database struct {
@@ -25,6 +26,13 @@ type database struct {
 
 type jwt struct {
 	Secret string `mapstructure:"JWT_SECRET" default:"your-secret-key"`
+}
+
+type aws struct {
+	Region          string `mapstructure:"AWS_REGION" default:"us-east-1"`
+	AccessKeyID     string `mapstructure:"AWS_ACCESS_KEY_ID"`
+	SecretAccessKey string `mapstructure:"AWS_SECRET_ACCESS_KEY"`
+	S3Bucket        string `mapstructure:"AWS_S3_BUCKET" default:"indicar-evaluation-photos"`
 }
 
 func getMappedEnvs(configStruct reflect.Type) []string {

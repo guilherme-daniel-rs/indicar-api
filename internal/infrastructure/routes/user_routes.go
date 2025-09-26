@@ -10,14 +10,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupUserRoutes(router *gin.Engine, db *gorm.DB) {
+func SetupUserRoutes(router *gin.Engine, db *gorm.DB) error {
 	userService := services.NewUserService(db)
 	userController := controllers.NewUserController(userService)
 
-	// Middleware de autenticação
 	authMiddleware := middleware.AuthMiddleware([]byte(configs.Get().JWT.Secret))
 
-	// Current user endpoints (protegidos)
 	me := router.Group("/me")
 	me.Use(authMiddleware)
 	{
@@ -25,10 +23,11 @@ func SetupUserRoutes(router *gin.Engine, db *gorm.DB) {
 		me.PUT("", userController.UpdateMe)
 	}
 
-	// Evaluator endpoints (protegidos)
 	evaluators := router.Group("/evaluators")
 	evaluators.Use(authMiddleware)
 	{
 		evaluators.GET("/:id", userController.GetEvaluator)
 	}
+
+	return nil
 }

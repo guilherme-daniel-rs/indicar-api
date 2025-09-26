@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func SetupAuthRoutes(router *gin.Engine, db *gorm.DB) {
+func SetupAuthRoutes(router *gin.Engine, db *gorm.DB) error {
 	authService := services.NewAuthService(db)
 	authController := controllers.NewAuthController(authService)
 
@@ -18,4 +18,6 @@ func SetupAuthRoutes(router *gin.Engine, db *gorm.DB) {
 		auth.POST("/login", authController.Login)
 		auth.POST("/refresh", authController.RefreshToken)
 	}
+
+	return nil
 }

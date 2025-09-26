@@ -49,9 +49,15 @@ func main() {
 	router := gin.Default()
 
 	// Setup routes
-	routes.SetupAuthRoutes(router, DB)
-	routes.SetupUserRoutes(router, DB)
-	routes.SetupEvaluationRoutes(router, DB) // Add evaluation routes
+	if err := routes.SetupAuthRoutes(router, DB); err != nil {
+		log.Fatalf("Failed to setup auth routes: %v", err)
+	}
+	if err := routes.SetupUserRoutes(router, DB); err != nil {
+		log.Fatalf("Failed to setup user routes: %v", err)
+	}
+	if err := routes.SetupEvaluationRoutes(router, DB); err != nil {
+		log.Fatalf("Failed to setup evaluation routes: %v", err)
+	}
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {

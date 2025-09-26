@@ -2,7 +2,10 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"indicar-api/internal/domain/entities"
+	"indicar-api/internal/infrastructure/aws"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -120,4 +123,66 @@ func isValidStatusTransition(current, new entities.EvaluationStatus) bool {
 	default:
 		return false
 	}
+}
+
+type EvaluationPhotoService struct {
+	db        *gorm.DB
+	s3Service *aws.S3Service
+}
+
+func NewEvaluationPhotoService(db *gorm.DB) (*EvaluationPhotoService, error) {
+	s3Service, err := aws.NewS3Service()
+	if err != nil {
+		return nil, err
+	}
+
+	return &EvaluationPhotoService{
+		db:        db,
+		s3Service: s3Service,
+	}, nil
+}
+
+type UploadPhotoInput struct {
+	File        []byte
+	ContentType string
+	SizeBytes   int
+}
+
+func (s *EvaluationPhotoService) UploadPhoto(evaluationID int, input UploadPhotoInput) (*entities.EvaluationPhoto, error) {
+	var evaluation entities.Evaluation
+	if err := s.db.First(&evaluation, evaluationID).Error; err != nil {
+		return nil, err
+	}
+
+	s3Key := fmt.Sprintf("evaluations/%d/photos/%d.jpg", evaluationID, time.Now().UnixNano())
+
+	if err := s.s3Service.UploadFile(s3Key, input.File, input.ContentType); err != nil {
+		return nil, fmt.Errorf("failed to upload file to S3: %w", err)
+	}
+
+	photo := &entities.EvaluationPhoto{
+		EvaluationID: evaluationID,
+		S3Bucket:     s.s3Service.Bucket,
+		S3Key:        s3Key,
+		ContentType:  &input.ContentType,
+		SizeBytes:    &input.SizeBytes,
+	}
+
+	if err := s.db.Create(photo).Error; err != nil {
+		return nil, err
+	}
+
+	return photo, nil
+}
+
+func (s *EvaluationPhotoService) ListPhotos(evaluationID int) ([]entities.EvaluationPhoto, error) {
+	var photos []entities.EvaluationPhoto
+
+	if err := s.db.Where("evaluation_id = ?", evaluationID).
+		Order("created_at DESC").
+		Find(&photos).Error; err != nil {
+		return nil, err
+	}
+
+	return photos, nil
 }
