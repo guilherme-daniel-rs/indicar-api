@@ -38,10 +38,31 @@ jobs:
     steps:
       - name: Pull Docker image
         run: docker pull ${{ secrets.DOCKER_USERNAME }}/indicar-api:latest
-      - name: Run Docker container
+      - name: Create .env on runner
+        run: |
+          cat > .env <<EOF
+          DB_HOST=${{ secrets.DB_HOST }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DB_NAME=${{ secrets.DB_NAME }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          EOF
+
+      - name: Run DB migrations (one-off)
+        run: |
+          docker run --rm \
+            --env-file .env \
+            --name indicar-api-migrate \
+            ${{ secrets.DOCKER_USERNAME }}/indicar-api:latest -migrate
+
+      - name: Restart API container
         run: |
           docker stop indicar-api || true
           docker rm indicar-api || true
-          docker run -d -p 80:80 --name indicar-api ${{ secrets.DOCKER_USERNAME }}/indicar-api:latest -migrate
-          docker run -d -p 80:80 --name indicar-api ${{ secrets.DOCKER_USERNAME }}/indicar-api:latest
+          docker run -d \
+            --restart unless-stopped \
+            --env-file .env \
+            -p 80:8080 \
+            --name indicar-api \
+            ${{ secrets.DOCKER_USERNAME }}/indicar-api:latest
       
