@@ -26,10 +26,13 @@ func NewAuthService(db *gorm.DB) *AuthService {
 }
 
 type SignupInput struct {
-	FullName string `json:"full_name" binding:"required"`
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
-	Phone    string `json:"phone"`
+	FullName   string  `json:"full_name" binding:"required"`
+	Email      string  `json:"email" binding:"required,email"`
+	Password   string  `json:"password" binding:"required,min=6"`
+	Phone      string  `json:"phone"`
+	Role       string  `json:"role" binding:"required,oneof=user evaluator"`
+	DocumentID *string `json:"document_id,omitempty"`
+	Bio        *string `json:"bio,omitempty"`
 }
 
 type LoginInput struct {
@@ -54,20 +57,42 @@ func (s *AuthService) Signup(input SignupInput) (*AuthResponse, error) {
 		return nil, err
 	}
 
-	user := &entities.User{
-		FullName:     input.FullName,
-		Email:        input.Email,
-		PasswordHash: string(hashedPassword),
-		Phone:        &input.Phone,
-		Role:         entities.UserRoleUser,
-		IsActive:     true,
-	}
+	// Start a transaction since we might need to create multiple records
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		user := &entities.User{
+			FullName:     input.FullName,
+			Email:        input.Email,
+			PasswordHash: string(hashedPassword),
+			Phone:        &input.Phone,
+			Role:         entities.UserRole(input.Role),
+			IsActive:     true,
+		}
 
-	if err := s.db.Create(user).Error; err != nil {
+		if err := tx.Create(user).Error; err != nil {
+			return err
+		}
+
+		if user.Role == entities.UserRoleEvaluator {
+			evaluator := &entities.Evaluator{
+				UserID:     user.ID,
+				DocumentID: input.DocumentID,
+				Bio:        input.Bio,
+			}
+
+			if err := tx.Create(evaluator).Error; err != nil {
+				return err
+			}
+		}
+
+		existingUser = *user
+		return nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return s.generateTokens(user)
+	return s.generateTokens(&existingUser)
 }
 
 func (s *AuthService) Login(input LoginInput) (*AuthResponse, error) {
