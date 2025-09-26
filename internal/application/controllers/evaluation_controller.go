@@ -20,6 +20,18 @@ func NewEvaluationController(evaluationService *services.EvaluationService, eval
 	}
 }
 
+// @Summary Create evaluation
+// @Description Create a new vehicle evaluation request
+// @Tags evaluations
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param input body services.CreateEvaluationInput true "Evaluation creation data"
+// @Success 201 {object} entities.Evaluation
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /evaluations [post]
 func (c *EvaluationController) Create(ctx *gin.Context) {
 	userID := ctx.GetInt("user_id")
 	if userID == 0 {
@@ -42,6 +54,16 @@ func (c *EvaluationController) Create(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, evaluation)
 }
 
+// @Summary Get evaluation by ID
+// @Description Get a specific evaluation by its ID
+// @Tags evaluations
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Evaluation ID"
+// @Success 200 {object} entities.Evaluation
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /evaluations/{id} [get]
 func (c *EvaluationController) GetByID(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -58,6 +80,15 @@ func (c *EvaluationController) GetByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, evaluation)
 }
 
+// @Summary List evaluations
+// @Description Get a list of evaluations with optional status filter
+// @Tags evaluations
+// @Produce json
+// @Security Bearer
+// @Param status query string false "Filter by status (created, accepted, in_progress, completed, canceled)"
+// @Success 200 {array} entities.Evaluation
+// @Failure 500 {object} map[string]interface{}
+// @Router /evaluations [get]
 func (c *EvaluationController) List(ctx *gin.Context) {
 	status := ctx.Query("status")
 	evaluations, err := c.evaluationService.List(status)
@@ -69,6 +100,18 @@ func (c *EvaluationController) List(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, evaluations)
 }
 
+// @Summary Update evaluation
+// @Description Update an existing evaluation
+// @Tags evaluations
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Evaluation ID"
+// @Param input body services.UpdateEvaluationInput true "Evaluation update data"
+// @Success 200 {object} entities.Evaluation
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /evaluations/{id} [patch]
 func (c *EvaluationController) Update(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -91,6 +134,18 @@ func (c *EvaluationController) Update(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, evaluation)
 }
 
+// @Summary Upload evaluation photo
+// @Description Upload a photo for an evaluation
+// @Tags evaluations
+// @Accept multipart/form-data
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Evaluation ID"
+// @Param photo formData file true "Photo file (max 10MB)"
+// @Success 201 {object} entities.EvaluationPhoto
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /evaluations/{id}/photos [post]
 func (c *EvaluationController) UploadPhoto(ctx *gin.Context) {
 	evaluationID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -138,6 +193,16 @@ func (c *EvaluationController) UploadPhoto(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, photo)
 }
 
+// @Summary List evaluation photos
+// @Description Get a list of photos for an evaluation
+// @Tags evaluations
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Evaluation ID"
+// @Success 200 {array} entities.EvaluationPhoto
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /evaluations/{id}/photos [get]
 func (c *EvaluationController) ListPhotos(ctx *gin.Context) {
 	evaluationID, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {

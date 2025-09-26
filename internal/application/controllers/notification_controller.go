@@ -17,6 +17,18 @@ func NewNotificationController(notificationService *services.NotificationService
 	}
 }
 
+// @Summary Register device for push notifications
+// @Description Register a device for receiving push notifications
+// @Tags devices
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param input body services.RegisterDeviceInput true "Device registration data"
+// @Success 201 {object} entities.PushDevice
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /devices [post]
 func (c *NotificationController) RegisterDevice(ctx *gin.Context) {
 	userID := ctx.GetInt("user_id")
 	if userID == 0 {

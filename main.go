@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"indicar-api/configs"
+	"indicar-api/docs"
 	"indicar-api/internal/infrastructure/database"
 	"indicar-api/internal/infrastructure/database/migrations"
 	"indicar-api/internal/infrastructure/routes"
@@ -11,11 +12,32 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
 
+// @title           Indicar API
+// @version         1.0
+// @description     API for vehicle evaluation service
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:8080
+// @BasePath  /
+
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 func init() {
 	configs.Load()
 
@@ -48,6 +70,16 @@ func main() {
 
 	router := gin.Default()
 
+	// Swagger documentation
+	docs.SwaggerInfo.Title = "Indicar API"
+	docs.SwaggerInfo.Description = "API for vehicle evaluation service"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = "localhost:8080"
+	docs.SwaggerInfo.BasePath = "/"
+	docs.SwaggerInfo.Schemes = []string{"http", "https"}
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	// Setup routes
 	if err := routes.SetupAuthRoutes(router, DB); err != nil {
 		log.Fatalf("Failed to setup auth routes: %v", err)
@@ -66,6 +98,13 @@ func main() {
 	}
 
 	// Health check endpoint
+	// @Summary Health check endpoint
+	// @Description Check if the API and database are running
+	// @Tags health
+	// @Produce json
+	// @Success 200 {object} map[string]interface{}
+	// @Failure 500 {object} map[string]interface{}
+	// @Router /health [get]
 	router.GET("/health", func(c *gin.Context) {
 		sqlDB, err := DB.DB()
 		if err != nil {

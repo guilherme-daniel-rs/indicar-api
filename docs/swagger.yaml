@@ -1,0 +1,819 @@
+basePath: /
+definitions:
+  entities.Evaluation:
+    properties:
+      city_id:
+        type: integer
+      created_at:
+        type: string
+      evaluator_id:
+        type: integer
+      id:
+        type: integer
+      notes:
+        type: string
+      requester_id:
+        type: integer
+      status:
+        $ref: '#/definitions/entities.EvaluationStatus'
+      updated_at:
+        type: string
+      vehicle_make:
+        type: string
+      vehicle_model:
+        type: string
+      vehicle_plate:
+        type: string
+      vehicle_year:
+        type: integer
+    type: object
+  entities.EvaluationPhoto:
+    properties:
+      content_type:
+        type: string
+      created_at:
+        type: string
+      evaluation_id:
+        type: integer
+      id:
+        type: integer
+      s3_bucket:
+        type: string
+      s3_key:
+        type: string
+      size_bytes:
+        type: integer
+    type: object
+  entities.EvaluationStatus:
+    enum:
+    - created
+    - accepted
+    - in_progress
+    - completed
+    - canceled
+    type: string
+    x-enum-varnames:
+    - EvaluationStatusCreated
+    - EvaluationStatusAccepted
+    - EvaluationStatusInProgress
+    - EvaluationStatusCompleted
+    - EvaluationStatusCanceled
+  entities.PushDevice:
+    properties:
+      created_at:
+        type: string
+      device_token:
+        type: string
+      id:
+        type: integer
+      last_seen_at:
+        type: string
+      platform:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  entities.Report:
+    properties:
+      created_at:
+        type: string
+      evaluation_id:
+        type: integer
+      evaluator_id:
+        type: integer
+      id:
+        type: integer
+      status:
+        $ref: '#/definitions/entities.ReportStatus'
+      summary:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  entities.ReportStatus:
+    enum:
+    - draft
+    - finalized
+    type: string
+    x-enum-varnames:
+    - ReportStatusDraft
+    - ReportStatusFinalized
+  entities.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      phone:
+        type: string
+      role:
+        $ref: '#/definitions/entities.UserRole'
+      updated_at:
+        type: string
+    type: object
+  entities.UserRole:
+    enum:
+    - user
+    - evaluator
+    - admin
+    type: string
+    x-enum-varnames:
+    - UserRoleUser
+    - UserRoleEvaluator
+    - UserRoleAdmin
+  services.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+      user:
+        $ref: '#/definitions/entities.User'
+    type: object
+  services.CreateEvaluationInput:
+    properties:
+      city_id:
+        type: integer
+      notes:
+        type: string
+      vehicle_make:
+        type: string
+      vehicle_model:
+        type: string
+      vehicle_plate:
+        type: string
+      vehicle_year:
+        type: integer
+    required:
+    - city_id
+    - vehicle_make
+    - vehicle_model
+    type: object
+  services.CreateReportInput:
+    properties:
+      evaluation_id:
+        type: integer
+      summary:
+        type: string
+    required:
+    - evaluation_id
+    type: object
+  services.LoginInput:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  services.RegisterDeviceInput:
+    properties:
+      device_token:
+        type: string
+      platform:
+        enum:
+        - ios
+        - android
+        type: string
+    required:
+    - device_token
+    - platform
+    type: object
+  services.SignupInput:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      phone:
+        type: string
+    required:
+    - email
+    - full_name
+    - password
+    type: object
+  services.UpdateEvaluationInput:
+    properties:
+      evaluator_id:
+        type: integer
+      notes:
+        type: string
+      status:
+        type: string
+    type: object
+  services.UpdateUserInput:
+    properties:
+      full_name:
+        type: string
+      phone:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API for vehicle evaluation service
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Indicar API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate an existing user
+      parameters:
+      - description: Login credentials
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/services.LoginInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: User login
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Get new access token using refresh token
+      parameters:
+      - description: Refresh token
+        in: header
+        name: X-Refresh-Token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Refresh token
+      tags:
+      - auth
+  /auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user
+      parameters:
+      - description: Signup credentials
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/services.SignupInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/services.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: User signup
+      tags:
+      - auth
+  /devices:
+    post:
+      consumes:
+      - application/json
+      description: Register a device for receiving push notifications
+      parameters:
+      - description: Device registration data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/services.RegisterDeviceInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.PushDevice'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Register device for push notifications
+      tags:
+      - devices
+  /evaluations:
+    get:
+      description: Get a list of evaluations with optional status filter
+      parameters:
+      - description: Filter by status (created, accepted, in_progress, completed,
+          canceled)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.Evaluation'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List evaluations
+      tags:
+      - evaluations
+    post:
+      consumes:
+      - application/json
+      description: Create a new vehicle evaluation request
+      parameters:
+      - description: Evaluation creation data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/services.CreateEvaluationInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.Evaluation'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Create evaluation
+      tags:
+      - evaluations
+  /evaluations/{id}:
+    get:
+      description: Get a specific evaluation by its ID
+      parameters:
+      - description: Evaluation ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Evaluation'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get evaluation by ID
+      tags:
+      - evaluations
+    patch:
+      consumes:
+      - application/json
+      description: Update an existing evaluation
+      parameters:
+      - description: Evaluation ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Evaluation update data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/services.UpdateEvaluationInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Evaluation'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Update evaluation
+      tags:
+      - evaluations
+  /evaluations/{id}/photos:
+    get:
+      description: Get a list of photos for an evaluation
+      parameters:
+      - description: Evaluation ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/entities.EvaluationPhoto'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List evaluation photos
+      tags:
+      - evaluations
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a photo for an evaluation
+      parameters:
+      - description: Evaluation ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Photo file (max 10MB)
+        in: formData
+        name: photo
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.EvaluationPhoto'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Upload evaluation photo
+      tags:
+      - evaluations
+  /evaluators/{id}:
+    get:
+      description: Get an evaluator's public profile
+      parameters:
+      - description: Evaluator ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get evaluator profile
+      tags:
+      - evaluators
+  /me:
+    get:
+      description: Get the currently authenticated user's profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.User'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get current user
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update the currently authenticated user's profile
+      parameters:
+      - description: User update data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/services.UpdateUserInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Update current user
+      tags:
+      - users
+  /reports:
+    post:
+      consumes:
+      - application/json
+      description: Create a new report or update an existing one
+      parameters:
+      - description: Report data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/services.CreateReportInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Report'
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.Report'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Create or update report
+      tags:
+      - reports
+  /reports/{id}:
+    get:
+      description: Get a specific report by its ID
+      parameters:
+      - description: Report ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Report'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get report by ID
+      tags:
+      - reports
+    patch:
+      consumes:
+      - application/json
+      description: Create a new report or update an existing one
+      parameters:
+      - description: Report ID (required for updates)
+        in: path
+        name: id
+        type: integer
+      - description: Report data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/services.CreateReportInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entities.Report'
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entities.Report'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Create or update report
+      tags:
+      - reports
+  /reports/{id}/file:
+    get:
+      description: Get a pre-signed URL for downloading the report file
+      parameters:
+      - description: Report ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get report file URL
+      tags:
+      - reports
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

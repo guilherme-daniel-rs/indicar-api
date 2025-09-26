@@ -18,6 +18,20 @@ func NewReportController(reportService *services.ReportService) *ReportControlle
 	}
 }
 
+// @Summary Create or update report
+// @Description Create a new report or update an existing one
+// @Tags reports
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path int false "Report ID (required for updates)"
+// @Param input body services.CreateReportInput true "Report data"
+// @Success 200,201 {object} entities.Report
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /reports [post]
+// @Router /reports/{id} [patch]
 func (c *ReportController) CreateOrUpdate(ctx *gin.Context) {
 	userID := ctx.GetInt("user_id")
 	if userID == 0 {
@@ -66,6 +80,16 @@ func (c *ReportController) CreateOrUpdate(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, report)
 }
 
+// @Summary Get report by ID
+// @Description Get a specific report by its ID
+// @Tags reports
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Report ID"
+// @Success 200 {object} entities.Report
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /reports/{id} [get]
 func (c *ReportController) GetByID(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -82,6 +106,17 @@ func (c *ReportController) GetByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, report)
 }
 
+// @Summary Get report file URL
+// @Description Get a pre-signed URL for downloading the report file
+// @Tags reports
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Report ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /reports/{id}/file [get]
 func (c *ReportController) GetFileURL(ctx *gin.Context) {
 	userID := ctx.GetInt("user_id")
 	if userID == 0 {
