@@ -61,6 +61,9 @@ func main() {
 	if err := routes.SetupReportRoutes(router, DB); err != nil {
 		log.Fatalf("Failed to setup report routes: %v", err)
 	}
+	if err := routes.SetupNotificationRoutes(router, DB); err != nil {
+		log.Fatalf("Failed to setup notification routes: %v", err)
+	}
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
