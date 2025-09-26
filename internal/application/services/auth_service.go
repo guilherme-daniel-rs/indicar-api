@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"indicar-api/configs"
 	"indicar-api/internal/domain/entities"
 	"time"
 
@@ -19,7 +20,7 @@ type AuthService struct {
 func NewAuthService(db *gorm.DB) *AuthService {
 	return &AuthService{
 		db:          db,
-		jwtSecret:   []byte("your-secret-key"), // TODO: Move to config
+		jwtSecret:   []byte(configs.Get().JWT.Secret),
 		tokenExpiry: 24 * time.Hour,
 	}
 }

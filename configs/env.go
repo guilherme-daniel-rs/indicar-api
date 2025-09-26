@@ -12,6 +12,7 @@ var configuration *Config
 
 type Config struct {
 	Database database
+	JWT      jwt
 }
 
 type database struct {
@@ -20,6 +21,10 @@ type database struct {
 	Host     string `mapstructure:"DB_HOST"`
 	Port     string `mapstructure:"DB_PORT"`
 	Name     string `mapstructure:"DB_NAME"`
+}
+
+type jwt struct {
+	Secret string `mapstructure:"JWT_SECRET" default:"your-secret-key"`
 }
 
 func getMappedEnvs(configStruct reflect.Type) []string {

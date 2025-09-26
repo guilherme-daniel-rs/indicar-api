@@ -50,6 +50,7 @@ func main() {
 
 	// Setup routes
 	routes.SetupAuthRoutes(router, DB)
+	routes.SetupUserRoutes(router, DB) // Add this line
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
