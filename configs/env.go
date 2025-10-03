@@ -112,6 +112,10 @@ func Load() error {
 		return err
 	}
 
+	if err := viper.Unmarshal(&configuration.AWS); err != nil {
+		return err
+	}
+
 	return nil
 }
 
