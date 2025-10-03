@@ -154,7 +154,34 @@ func (s *EvaluationPhotoService) UploadPhoto(evaluationID int, input UploadPhoto
 		return nil, err
 	}
 
-	s3Key := fmt.Sprintf("evaluations/%d/photos/%d.jpg", evaluationID, time.Now().UnixNano())
+	// Validate file type (only images allowed)
+	allowedTypes := []string{"image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"}
+	if err := s.s3Service.ValidateFileType("photo.jpg", allowedTypes); err != nil {
+		return nil, fmt.Errorf("invalid file type: %w", err)
+	}
+
+	// Validate file size (max 10MB for photos)
+	maxSize := int64(10 * 1024 * 1024) // 10MB
+	if err := s.s3Service.ValidateFileSize(int64(input.SizeBytes), maxSize); err != nil {
+		return nil, fmt.Errorf("file too large: %w", err)
+	}
+
+	// Generate appropriate file extension based on content type
+	var ext string
+	switch input.ContentType {
+	case "image/jpeg", "image/jpg":
+		ext = "jpg"
+	case "image/png":
+		ext = "png"
+	case "image/gif":
+		ext = "gif"
+	case "image/webp":
+		ext = "webp"
+	default:
+		ext = "jpg" // default fallback
+	}
+
+	s3Key := fmt.Sprintf("evaluations/%d/photos/%d.%s", evaluationID, time.Now().UnixNano(), ext)
 
 	if err := s.s3Service.UploadFile(s3Key, input.File, input.ContentType); err != nil {
 		return nil, fmt.Errorf("failed to upload file to S3: %w", err)
@@ -169,6 +196,8 @@ func (s *EvaluationPhotoService) UploadPhoto(evaluationID int, input UploadPhoto
 	}
 
 	if err := s.db.Create(photo).Error; err != nil {
+		// If database creation fails, clean up S3 file
+		s.s3Service.DeleteFile(s3Key)
 		return nil, err
 	}
 

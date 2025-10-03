@@ -138,3 +138,78 @@ func (c *ReportController) GetFileURL(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"url": fileURL})
 }
+
+// @Summary Upload report file
+// @Description Upload a PDF file for a report
+// @Tags reports
+// @Accept multipart/form-data
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Report ID"
+// @Param file formData file true "PDF file (max 50MB)"
+// @Success 201 {object} entities.ReportFile
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /reports/{id}/file [post]
+func (c *ReportController) UploadFile(ctx *gin.Context) {
+	userID := ctx.GetInt("user_id")
+	if userID == 0 {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	reportID, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid report ID"})
+		return
+	}
+
+	file, err := ctx.FormFile("file")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
+		return
+	}
+
+	// Validate file size (max 50MB)
+	if file.Size > 50*1024*1024 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "file size exceeds 50MB limit"})
+		return
+	}
+
+	// Validate file type (only PDF)
+	contentType := file.Header.Get("Content-Type")
+	if contentType != "application/pdf" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "only PDF files are allowed"})
+		return
+	}
+
+	f, err := file.Open()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error reading file"})
+		return
+	}
+	defer f.Close()
+
+	fileBytes := make([]byte, file.Size)
+	_, err = f.Read(fileBytes)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error reading file"})
+		return
+	}
+
+	input := services.UploadReportFileInput{
+		File:        fileBytes,
+		ContentType: contentType,
+		SizeBytes:   int(file.Size),
+		Filename:    file.Filename,
+	}
+
+	reportFile, err := c.reportService.UploadReportFile(reportID, userID, input)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, reportFile)
+}

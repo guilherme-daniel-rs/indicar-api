@@ -24,8 +24,10 @@ func SetupReportRoutes(router *gin.Engine, db *gorm.DB) error {
 	{
 		reports.POST("", reportController.CreateOrUpdate)
 		reports.GET("/:id", reportController.GetByID)
-		reports.GET("/:id/file", reportController.GetFileURL)
 		reports.PATCH("/:id", reportController.CreateOrUpdate)
+
+		reports.POST("/:id/file", reportController.UploadFile)
+		reports.GET("/:id/file", reportController.GetFileURL)
 	}
 
 	return nil

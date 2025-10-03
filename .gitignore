@@ -7,3 +7,7 @@ __debug*
 cover.out
 credentials.json
 /vendor
+
+# Documentation files (except README.md)
+*.md
+!README.md

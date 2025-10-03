@@ -159,8 +159,24 @@ func (c *EvaluationController) UploadPhoto(ctx *gin.Context) {
 		return
 	}
 
+	// Validate file size (max 10MB)
 	if file.Size > 10*1024*1024 {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "file size exceeds 10MB limit"})
+		return
+	}
+
+	// Validate file type (only images allowed)
+	contentType := file.Header.Get("Content-Type")
+	allowedTypes := []string{"image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"}
+	isValidType := false
+	for _, allowedType := range allowedTypes {
+		if contentType == allowedType {
+			isValidType = true
+			break
+		}
+	}
+	if !isValidType {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "only image files are allowed (JPEG, PNG, GIF, WebP)"})
 		return
 	}
 
@@ -180,7 +196,7 @@ func (c *EvaluationController) UploadPhoto(ctx *gin.Context) {
 
 	input := services.UploadPhotoInput{
 		File:        fileBytes,
-		ContentType: file.Header.Get("Content-Type"),
+		ContentType: contentType,
 		SizeBytes:   int(file.Size),
 	}
 
