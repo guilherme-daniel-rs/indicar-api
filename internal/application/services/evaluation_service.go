@@ -204,7 +204,18 @@ func (s *EvaluationPhotoService) UploadPhoto(evaluationID int, input UploadPhoto
 	return photo, nil
 }
 
-func (s *EvaluationPhotoService) ListPhotos(evaluationID int) ([]entities.EvaluationPhoto, error) {
+type PhotoResponse struct {
+	ID           int       `json:"id"`
+	EvaluationID int       `json:"evaluation_id"`
+	S3Bucket     string    `json:"s3_bucket"`
+	S3Key        string    `json:"s3_key"`
+	ContentType  *string   `json:"content_type,omitempty"`
+	SizeBytes    *int      `json:"size_bytes,omitempty"`
+	URL          string    `json:"url"` // Presigned URL
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+func (s *EvaluationPhotoService) ListPhotos(evaluationID int) ([]PhotoResponse, error) {
 	var photos []entities.EvaluationPhoto
 
 	if err := s.db.Where("evaluation_id = ?", evaluationID).
@@ -213,5 +224,41 @@ func (s *EvaluationPhotoService) ListPhotos(evaluationID int) ([]entities.Evalua
 		return nil, err
 	}
 
-	return photos, nil
+	// Generate presigned URLs for each photo
+	responses := make([]PhotoResponse, len(photos))
+	for i, photo := range photos {
+		url, err := s.s3Service.GetPresignedURL(photo.S3Key, 24*time.Hour) // 24 hours expiration
+		if err != nil {
+			// If presigned URL generation fails, use empty string (log error but don't fail entire request)
+			url = ""
+		}
+
+		responses[i] = PhotoResponse{
+			ID:           photo.ID,
+			EvaluationID: photo.EvaluationID,
+			S3Bucket:     photo.S3Bucket,
+			S3Key:        photo.S3Key,
+			ContentType:  photo.ContentType,
+			SizeBytes:    photo.SizeBytes,
+			URL:          url,
+			CreatedAt:    photo.CreatedAt,
+		}
+	}
+
+	return responses, nil
+}
+
+// GetPhotoURL returns a presigned URL for a specific photo
+func (s *EvaluationPhotoService) GetPhotoURL(photoID int) (string, error) {
+	var photo entities.EvaluationPhoto
+	if err := s.db.First(&photo, photoID).Error; err != nil {
+		return "", errors.New("photo not found")
+	}
+
+	url, err := s.s3Service.GetPresignedURL(photo.S3Key, 24*time.Hour)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate presigned URL: %w", err)
+	}
+
+	return url, nil
 }

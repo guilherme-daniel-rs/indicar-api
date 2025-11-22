@@ -39,6 +39,7 @@ func SetupEvaluationRoutes(router *gin.Engine, db *gorm.DB) error {
 		evaluations.GET("/:id/report", reportController.GetByEvaluationID)
 		evaluations.POST("/:id/photos", evaluationController.UploadPhoto)
 		evaluations.GET("/:id/photos", evaluationController.ListPhotos)
+		evaluations.GET("/:id/photos/:photo_id", evaluationController.GetPhotoURL)
 
 		// Generic routes come last
 		evaluations.GET("/:id", evaluationController.GetByID)

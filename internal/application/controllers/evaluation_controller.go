@@ -210,12 +210,12 @@ func (c *EvaluationController) UploadPhoto(ctx *gin.Context) {
 }
 
 // @Summary List evaluation photos
-// @Description Get a list of photos for an evaluation
+// @Description Get a list of photos for an evaluation with presigned URLs
 // @Tags evaluations
 // @Produce json
 // @Security Bearer
 // @Param id path int true "Evaluation ID"
-// @Success 200 {array} entities.EvaluationPhoto
+// @Success 200 {array} services.PhotoResponse
 // @Failure 400 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
 // @Router /evaluations/{id}/photos [get]
@@ -233,4 +233,36 @@ func (c *EvaluationController) ListPhotos(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, photos)
+}
+
+// @Summary Get photo URL
+// @Description Get a presigned URL for a specific evaluation photo
+// @Tags evaluations
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Evaluation ID"
+// @Param photo_id path int true "Photo ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /evaluations/{id}/photos/{photo_id} [get]
+func (c *EvaluationController) GetPhotoURL(ctx *gin.Context) {
+	photoID, err := strconv.Atoi(ctx.Param("photo_id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid photo ID"})
+		return
+	}
+
+	url, err := c.evaluationPhotoService.GetPhotoURL(photoID)
+	if err != nil {
+		if err.Error() == "photo not found" {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"url": url})
 }
