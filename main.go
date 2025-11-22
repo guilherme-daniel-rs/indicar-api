@@ -96,6 +96,9 @@ func main() {
 	if err := routes.SetupNotificationRoutes(router, DB); err != nil {
 		log.Fatalf("Failed to setup notification routes: %v", err)
 	}
+	if err := routes.SetupCityRoutes(router, DB); err != nil {
+		log.Fatalf("Failed to setup city routes: %v", err)
+	}
 
 	// Health check endpoint
 	// @Summary Health check endpoint

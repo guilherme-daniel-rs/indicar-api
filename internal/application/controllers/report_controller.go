@@ -106,6 +106,32 @@ func (c *ReportController) GetByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, report)
 }
 
+// @Summary Get report by evaluation ID
+// @Description Get the report for a specific evaluation
+// @Tags reports
+// @Produce json
+// @Security Bearer
+// @Param id path int true "Evaluation ID"
+// @Success 200 {object} entities.Report
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /evaluations/{id}/report [get]
+func (c *ReportController) GetByEvaluationID(ctx *gin.Context) {
+	evaluationID, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid evaluation ID"})
+		return
+	}
+
+	report, err := c.reportService.GetByEvaluationID(evaluationID)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, report)
+}
+
 // @Summary Get report file URL
 // @Description Get a pre-signed URL for downloading the report file
 // @Tags reports

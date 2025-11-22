@@ -76,6 +76,14 @@ func (s *ReportService) GetByID(id int) (*entities.Report, error) {
 	return &report, nil
 }
 
+func (s *ReportService) GetByEvaluationID(evaluationID int) (*entities.Report, error) {
+	var report entities.Report
+	if err := s.db.Where("evaluation_id = ?", evaluationID).First(&report).Error; err != nil {
+		return nil, errors.New("report not found")
+	}
+	return &report, nil
+}
+
 func (s *ReportService) Update(id int, evaluatorID int, input UpdateReportInput) (*entities.Report, error) {
 	report, err := s.GetByID(id)
 	if err != nil {

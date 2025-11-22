@@ -20,18 +20,29 @@ func SetupEvaluationRoutes(router *gin.Engine, db *gorm.DB) error {
 
 	evaluationController := controllers.NewEvaluationController(evaluationService, evaluationPhotoService)
 
+	// Initialize report controller for nested route
+	reportService, err := services.NewReportService(db)
+	if err != nil {
+		return fmt.Errorf("failed to initialize report service: %w", err)
+	}
+	reportController := controllers.NewReportController(reportService)
+
 	authMiddleware := middleware.AuthMiddleware([]byte(configs.Get().JWT.Secret))
 
 	evaluations := router.Group("/evaluations")
 	evaluations.Use(authMiddleware)
 	{
 		evaluations.POST("", evaluationController.Create)
-		evaluations.GET("/:id", evaluationController.GetByID)
 		evaluations.GET("", evaluationController.List)
-		evaluations.PATCH("/:id", evaluationController.Update)
 
+		// Nested routes must come before /:id route to avoid conflicts
+		evaluations.GET("/:id/report", reportController.GetByEvaluationID)
 		evaluations.POST("/:id/photos", evaluationController.UploadPhoto)
 		evaluations.GET("/:id/photos", evaluationController.ListPhotos)
+
+		// Generic routes come last
+		evaluations.GET("/:id", evaluationController.GetByID)
+		evaluations.PATCH("/:id", evaluationController.Update)
 	}
 
 	return nil
