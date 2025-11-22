@@ -11,7 +11,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
@@ -21,11 +22,37 @@ type S3Service struct {
 }
 
 func NewS3Service() (*S3Service, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(configs.Get().AWS.Region),
-	)
-	if err != nil {
-		return nil, err
+	ctx := context.TODO()
+	region := configs.Get().AWS.Region
+
+	// Try to load credentials from config first
+	accessKeyID := strings.TrimSpace(configs.Get().AWS.AccessKeyID)
+	secretAccessKey := strings.TrimSpace(configs.Get().AWS.SecretAccessKey)
+
+	var cfg aws.Config
+	var err error
+
+	// If static credentials are provided via config, use them
+	if accessKeyID != "" && secretAccessKey != "" {
+		cfg, err = awsconfig.LoadDefaultConfig(ctx,
+			awsconfig.WithRegion(region),
+			awsconfig.WithCredentialsProvider(
+				aws.NewCredentialsCache(
+					credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, ""),
+				),
+			),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load AWS config with static credentials: %w", err)
+		}
+	} else {
+		// Fall back to default credential chain (IAM roles, ~/.aws/credentials, etc.)
+		cfg, err = awsconfig.LoadDefaultConfig(ctx,
+			awsconfig.WithRegion(region),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load AWS config: %w. Hint: Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables for local development", err)
+		}
 	}
 
 	client := s3.NewFromConfig(cfg)
@@ -44,7 +71,11 @@ func (s *S3Service) UploadFile(key string, data []byte, contentType string) erro
 		ContentType: aws.String(contentType),
 	})
 
-	return err
+	if err != nil {
+		return fmt.Errorf("putobject error: %w (bucket=%s, region=%s, access=%s...)",
+			err, s.Bucket, configs.Get().AWS.Region, configs.Get().AWS.AccessKeyID[:5])
+	}
+	return nil
 }
 
 // GetFileURL returns a public URL for the file
