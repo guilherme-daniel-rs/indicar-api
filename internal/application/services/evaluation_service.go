@@ -62,7 +62,23 @@ func (s *EvaluationService) GetByID(id int) (*entities.Evaluation, error) {
 	return &evaluation, nil
 }
 
-func (s *EvaluationService) List(status string) ([]entities.Evaluation, error) {
+type EvaluationResponse struct {
+	ID           int                       `json:"id"`
+	RequesterID  int                       `json:"requester_id"`
+	EvaluatorID  *int                      `json:"evaluator_id,omitempty"`
+	CityID       int                       `json:"city_id"`
+	VehicleMake  string                    `json:"vehicle_make"`
+	VehicleModel string                    `json:"vehicle_model"`
+	VehicleYear  *int                      `json:"vehicle_year,omitempty"`
+	VehiclePlate *string                   `json:"vehicle_plate,omitempty"`
+	Status       entities.EvaluationStatus `json:"status"`
+	Notes        *string                   `json:"notes,omitempty"`
+	PhotosCount  int                       `json:"photos_count"`
+	CreatedAt    time.Time                 `json:"created_at"`
+	UpdatedAt    time.Time                 `json:"updated_at"`
+}
+
+func (s *EvaluationService) List(status string) ([]EvaluationResponse, error) {
 	var evaluations []entities.Evaluation
 	query := s.db.Order("created_at DESC")
 
@@ -74,7 +90,30 @@ func (s *EvaluationService) List(status string) ([]entities.Evaluation, error) {
 		return nil, err
 	}
 
-	return evaluations, nil
+	// Build response with photos count
+	responses := make([]EvaluationResponse, len(evaluations))
+	for i, eval := range evaluations {
+		var photosCount int64
+		s.db.Model(&entities.EvaluationPhoto{}).Where("evaluation_id = ?", eval.ID).Count(&photosCount)
+
+		responses[i] = EvaluationResponse{
+			ID:           eval.ID,
+			RequesterID:  eval.RequesterID,
+			EvaluatorID:  eval.EvaluatorID,
+			CityID:       eval.CityID,
+			VehicleMake:  eval.VehicleMake,
+			VehicleModel: eval.VehicleModel,
+			VehicleYear:  eval.VehicleYear,
+			VehiclePlate: eval.VehiclePlate,
+			Status:       eval.Status,
+			Notes:        eval.Notes,
+			PhotosCount:  int(photosCount),
+			CreatedAt:    eval.CreatedAt,
+			UpdatedAt:    eval.UpdatedAt,
+		}
+	}
+
+	return responses, nil
 }
 
 func (s *EvaluationService) Update(id int, input UpdateEvaluationInput) (*entities.Evaluation, error) {

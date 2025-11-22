@@ -86,7 +86,7 @@ func (c *EvaluationController) GetByID(ctx *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param status query string false "Filter by status (created, accepted, in_progress, completed, canceled)"
-// @Success 200 {array} entities.Evaluation
+// @Success 200 {array} services.EvaluationResponse
 // @Failure 500 {object} map[string]interface{}
 // @Router /evaluations [get]
 func (c *EvaluationController) List(ctx *gin.Context) {
