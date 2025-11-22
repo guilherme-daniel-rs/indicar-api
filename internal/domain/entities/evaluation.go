@@ -26,7 +26,6 @@ type Evaluation struct {
 	CreatedAt    time.Time        `json:"created_at" gorm:"type:datetime(3);not null;default:current_timestamp(3)"`
 	UpdatedAt    time.Time        `json:"updated_at" gorm:"type:datetime(3);not null;default:current_timestamp(3) on update current_timestamp(3)"`
 
-	// Relationships
 	Requester User  `json:"-" gorm:"foreignKey:RequesterID"`
 	Evaluator *User `json:"-" gorm:"foreignKey:EvaluatorID"`
 	City      City  `json:"-" gorm:"foreignKey:CityID"`

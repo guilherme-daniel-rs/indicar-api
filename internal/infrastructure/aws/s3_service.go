@@ -21,11 +21,6 @@ type S3Service struct {
 }
 
 func NewS3Service() (*S3Service, error) {
-	// Use default AWS configuration which will automatically:
-	// 1. Use IAM roles if running on EC2/ECS/Lambda
-	// 2. Use environment variables if available
-	// 3. Use AWS credentials file if available
-	// 4. Use EC2 instance metadata if available
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(configs.Get().AWS.Region),
 	)
@@ -41,7 +36,6 @@ func NewS3Service() (*S3Service, error) {
 	}, nil
 }
 
-// UploadFile uploads a file to S3
 func (s *S3Service) UploadFile(key string, data []byte, contentType string) error {
 	_, err := s.client.PutObject(context.TODO(), &s3.PutObjectInput{
 		Bucket:      aws.String(s.Bucket),
